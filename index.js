@@ -68,10 +68,39 @@ function checkChildSelectorConforming(report, remainder, topClass, isParentConst
     }
 }
 
-function checkCSS(css, report) {
-    var ast = parse(css, { position: true });
+function findNextRule(ruleList, startIndex) {
+    while (ruleList.length > startIndex) {
+        if (ruleList[startIndex].type === 'rule') {
+            return ruleList[startIndex];
+        }
 
-    ast.stylesheet.rules.forEach(function (rule) {
+        startIndex += 1;
+    }
+
+    throw new Error('no rules left');
+}
+
+function checkCSS(css, report) {
+    var ast = parse(css, { position: true }),
+        ignoreSelectors = null;
+
+    function isSelectorIgnored(v) {
+        if (ignoreSelectors === null) {
+            return false;
+        }
+
+        return ignoreSelectors.some(function (prefix) {
+            // make sure prefix matches but the first following character is not a word
+            return v.substring(0, prefix.length) === prefix && !/^[a-z0-9_-]/.test(v.substring(prefix.length));
+        });
+    }
+
+    ast.stylesheet.rules.forEach(function (rule, ruleIndex) {
+        if (rule.type === 'comment' && /^\s*airtight\s+ignore\s*$/.test(rule.comment)) {
+            ignoreSelectors = findNextRule(ast.stylesheet.rules, ruleIndex + 1).selectors;
+            return;
+        }
+
         if (rule.type !== 'rule') {
             return;
         }
@@ -83,6 +112,11 @@ function checkCSS(css, report) {
         }
 
         rule.selectors.forEach(function (v) {
+            // see if we are ignoring this rule selector
+            if (isSelectorIgnored(v)) {
+                return;
+            }
+
             if (isSelectorGlobal(v)) {
                 return;
             }
