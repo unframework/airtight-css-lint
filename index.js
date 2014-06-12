@@ -16,9 +16,8 @@ function isSelectorGlobal(v) {
     return /^([a-z0-9]+|\*)(::?[a-z-]+|\[[^\]]+\])*$/.test(v);
 }
 
-function checkChildSelectorConforming(report, remainder, topClass, isParentConstrained) {
-    var isConstrained = false,
-        fullBEMPrefix = topClass + '__';
+function walkChildSelectors(callback, remainder, isParentConstrained) {
+    var isConstrained = false;
 
     // @todo prevent sibling selector on top class
     if (remainder.charAt(0) === '>') {
@@ -36,35 +35,20 @@ function checkChildSelectorConforming(report, remainder, topClass, isParentConst
         childClass = childMatch[2],
         trailer = childMatch[3];
 
-    if (childClass && !childElement) {
-        if (childClass.charAt(0) !== '_' && childClass.substring(0, fullBEMPrefix.length) !== fullBEMPrefix) {
-            report('child class must have BEM prefix: ".' + childClass + '"');
-        }
-    } else if (childElement && !childClass) {
-        if (!isConstrained) {
-            report('tag-based match must be a direct child or sibling of direct child: "' + remainder + '"');
-        }
-
-        if (childElement === 'div' || childElement === 'span') {
-            report('do not use non-semantic tag name: "' + childElement + '"');
-        }
-    } else {
-        report('must specify either child element or class but not both: "' + remainder + '"');
-    }
+    var continueParsing = callback(childElement, childClass, isConstrained);
 
     while(/^\S/.test(trailer)) {
         var modifierMatch = /^(?:\.-[a-z0-9-]+|::?[a-z-]+|\[[^\]]+\])(.*)$/.exec(trailer);
 
         if (!modifierMatch) {
-            report('invalid modifier: "' + trailer + '"');
-            return;
+            throw new Error('invalid modifier: "' + trailer + '"');
         }
 
         trailer = modifierMatch[1];
     };
 
-    if (trailer !== '') {
-        checkChildSelectorConforming(report, trailer.replace(/^\s+/, ''), topClass, isConstrained);
+    if (continueParsing && trailer !== '') {
+        walkChildSelectors(callback, trailer.replace(/^\s+/, ''), isConstrained);
     }
 }
 
@@ -137,11 +121,31 @@ function checkCSS(css, report) {
                 fullReport('do not use top-level tag match: "' + topElement + '"');
             }
 
-            if (childElements !== undefined) {
-                checkChildSelectorConforming(fullReport, childElements, topClass);
+            if (childElements === undefined) {
+                return;
             }
 
-            // @todo check position: absolute to make sure constrained (!) parent has position: relative
+            var fullBEMPrefix = topClass + '__';
+
+            walkChildSelectors(function (childElement, childClass, isParentConstrained) {
+                if (childClass && !childElement) {
+                    if (childClass.charAt(0) !== '_' && childClass.substring(0, fullBEMPrefix.length) !== fullBEMPrefix) {
+                        fullReport('child class must have BEM prefix: ".' + childClass + '"');
+                    }
+                } else if (childElement && !childClass) {
+                    if (!isConstrained) {
+                        fullReport('tag-based match must be a direct child or sibling of direct child: "' + remainder + '"');
+                    }
+
+                    if (childElement === 'div' || childElement === 'span') {
+                        fullReport('do not use non-semantic tag name: "' + childElement + '"');
+                    }
+                } else {
+                    fullReport('must specify either child element or class but not both: "' + remainder + '"');
+                }
+
+                return true;
+            }, childElements);
         });
     });
 }
