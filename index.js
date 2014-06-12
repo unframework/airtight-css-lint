@@ -66,14 +66,19 @@ function findNextRule(ruleList, startIndex) {
 
 function checkCSS(css, report) {
     var ast = parse(css, { position: true }),
-        ignoreSelectors = null;
+        ignoreSelectors = [];
+
+    var relativeParentSelectors = [];
 
     function isSelectorIgnored(v) {
-        if (ignoreSelectors === null) {
-            return false;
-        }
-
         return ignoreSelectors.some(function (prefix) {
+            // make sure prefix matches but the first following character is not a word
+            return v.substring(0, prefix.length) === prefix && !/^[a-z0-9_-]/.test(v.substring(prefix.length));
+        });
+    }
+
+    function isSelectorCoveredByRelativeParent(v) {
+        return relativeParentSelectors.some(function (prefix) {
             // make sure prefix matches but the first following character is not a word
             return v.substring(0, prefix.length) === prefix && !/^[a-z0-9_-]/.test(v.substring(prefix.length));
         });
@@ -81,10 +86,11 @@ function checkCSS(css, report) {
 
     ast.stylesheet.rules.forEach(function (rule, ruleIndex) {
         if (rule.type === 'comment' && /^\s*airtight\s+ignore\s*$/.test(rule.comment)) {
-            ignoreSelectors = findNextRule(ast.stylesheet.rules, ruleIndex + 1).selectors;
-            return;
+            ignoreSelectors = ignoreSelectors.concat(findNextRule(ast.stylesheet.rules, ruleIndex + 1).selectors);
         }
+    });
 
+    ast.stylesheet.rules.forEach(function (rule) {
         if (rule.type !== 'rule') {
             return;
         }
@@ -94,6 +100,8 @@ function checkCSS(css, report) {
         function fullReport(msg) {
             report(positionStart.line, positionStart.column, msg);
         }
+
+        var ruleTopLevelSelectors = [];
 
         rule.selectors.forEach(function (v) {
             // see if we are ignoring this rule selector
@@ -122,12 +130,13 @@ function checkCSS(css, report) {
             }
 
             if (childElements === undefined) {
+                ruleTopLevelSelectors.push(v);
                 return;
             }
 
             var fullBEMPrefix = topClass + '__';
 
-            walkChildSelectors(function (childElement, childClass, isParentConstrained) {
+            walkChildSelectors(function (childElement, childClass, isConstrained) {
                 if (childClass && !childElement) {
                     if (childClass.charAt(0) !== '_' && childClass.substring(0, fullBEMPrefix.length) !== fullBEMPrefix) {
                         fullReport('child class must have BEM prefix: ".' + childClass + '"');
@@ -146,6 +155,44 @@ function checkCSS(css, report) {
 
                 return true;
             }, childElements);
+        });
+
+        // if relative element, remember selectors to check absolute children
+        rule.declarations.filter(function (decl) { return decl.type === 'declaration' && decl.property === 'position'; }).forEach(function (decl) {
+            if(decl.value === 'relative') {
+                rule.selectors.forEach(function (v) {
+                    relativeParentSelectors.push(v);
+                });
+            } else if(decl.value === 'fixed') {
+                // allow fixed position only on top-level elements
+                ruleTopLevelSelectors.forEach(function (v) {
+                    relativeParentSelectors.push(v);
+                });
+            }
+        });
+    });
+
+    // check absolute children against relative parents
+    ast.stylesheet.rules.forEach(function (rule) {
+        if (rule.type !== 'rule') {
+            return;
+        }
+
+        var positionStart = rule.position.start;
+
+        rule.declarations.filter(function (decl) { return decl.type === 'declaration' && decl.property === 'position'; }).forEach(function (decl) {
+            if(decl.value !== 'relative') {
+                rule.selectors.forEach(function (selector) {
+                    // see if we are ignoring this rule selector
+                    if (isSelectorIgnored(selector)) {
+                        return;
+                    }
+
+                    if (!isSelectorCoveredByRelativeParent(selector)) {
+                        report(positionStart.line, positionStart.column, 'no relative parent for ' + selector);
+                    }
+                });
+            }
         });
     });
 }
