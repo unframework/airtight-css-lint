@@ -143,7 +143,7 @@ function checkCSS(css, report) {
                     }
                 } else if (childElement && !childClass) {
                     if (!isConstrained) {
-                        fullReport('tag-based match must be a direct child or sibling of direct child: "' + childClass + '"');
+                        fullReport('tag-based match must be a direct child or sibling of direct child: "' + childElement + '"');
                     }
 
                     if (childElement === 'div' || childElement === 'span') {
