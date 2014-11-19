@@ -143,14 +143,14 @@ function checkCSS(css, report) {
                     }
                 } else if (childElement && !childClass) {
                     if (!isConstrained) {
-                        fullReport('tag-based match must be a direct child or sibling of direct child: "' + remainder + '"');
+                        fullReport('tag-based match must be a direct child or sibling of direct child: "' + childClass + '"');
                     }
 
                     if (childElement === 'div' || childElement === 'span') {
                         fullReport('do not use non-semantic tag name: "' + childElement + '"');
                     }
                 } else {
-                    fullReport('must specify either child element or class but not both: "' + remainder + '"');
+                    fullReport('must specify either child element or class but not both: "' + childClass + '"');
                 }
 
                 return true;
