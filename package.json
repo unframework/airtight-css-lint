@@ -1,6 +1,6 @@
 {
   "name": "airtight-css-lint",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Check CSS for airtightness",
   "main": "index.js",
   "scripts": {
