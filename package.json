@@ -4,7 +4,7 @@
   "description": "Check CSS for airtightness",
   "main": "index.js",
   "scripts": {
-    "test": "jshint index.js"
+    "test": "jshint index.js src"
   },
   "author": "Nick Matantsev <nick.matantsev@gmail.com>",
   "repository": {
