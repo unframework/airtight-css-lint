@@ -1,4 +1,14 @@
 var t = require('tap');
-var check = require('../');
+var checkCSS = require('../');
 
-t.equal(2 + 2, 4, 'stub test');
+function run(css) {
+    var results = [];
+
+    checkCSS(css, function (line, col, msg) {
+        results.push([ line, col, msg ]);
+    });
+
+    return results;
+}
+
+t.same(run(' '), [], 'empty CSS');
