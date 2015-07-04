@@ -4,7 +4,7 @@
   "description": "Check CSS for airtightness",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jshint index.js"
   },
   "author": "Nick Matantsev <nick.matantsev@gmail.com>",
   "repository": {
@@ -14,5 +14,8 @@
   "license": "BSD",
   "dependencies": {
     "css-parse": "~1.7.0"
+  },
+  "devDependencies": {
+    "jshint": "^2.8.0"
   }
 }

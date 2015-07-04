@@ -45,7 +45,7 @@ function walkChildSelectors(callback, remainder, isParentConstrained) {
         }
 
         trailer = modifierMatch[1];
-    };
+    }
 
     if (continueParsing && trailer !== '') {
         walkChildSelectors(callback, trailer.replace(/^\s+/, ''), isConstrained);
