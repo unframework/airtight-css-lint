@@ -2,10 +2,56 @@
 
 # Airtight CSS
 
-Check CSS (manual or generated from LESS/SASS) for better encapsulation and reduced side-effects/interactions between displayed elements. Expands on [BEM](http://csswizardry.com/2013/01/mindbemding-getting-your-head-round-bem-syntax/).
+Basic set of CSS encapsulation rules that reduce side-effects/interactions between displayed elements. It's [BEM](http://csswizardry.com/2013/01/mindbemding-getting-your-head-round-bem-syntax/) with one simple rule to fence-in components.
 
-As a result:
+That means:
 
-* style is constrained into a composable component structure for faster development
-* style modifications/refactors have less chance of introducing visual regressions
+* CSS is grouped into composable components
+* changes/refactors have less chance of breaking neighbouring code
+* code reviews (you're doing them, right?) are less of a mind-numbing 💩 experience
+* puppies frolick and kittens play
+
+## Sole-Sourced CSS
+
+Encapsulating CSS means following one cardinal rule:
+
+- **each DOM element should get its style from only one place**
+
+Simple, right? It pays off surprisingly well!
+
+For every element in DOM markup, there should be one clearly obvious stylesheet source that influences it. The developer should also be able to trust that *no other stylesheet* ends up overriding that DOM element's appearance.
+
+Examples:
+
+```css
+.neat-button {
+    background: red;
+}
+
+/* NOPE */
+.sidebar .neat-button {
+    background: blue;
+}
+
+/* YEP */
+.neat-button.-blue {
+    background: blue;
+}
+```
+
+...and...
+
+```html
+<!-- NOPE -->
+<div class="acme-grid">
+    <div class="cat acme-grid-4">Meow</div>
+</div>
+
+<!-- YEP -->
+<div class="acme-grid">
+    <div class="_grid-4">
+        <div class="cat">Meow</div>
+    </div>
+</div>
+```
 
