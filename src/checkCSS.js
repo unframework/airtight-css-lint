@@ -38,7 +38,7 @@ function walkChildSelectors(callback, remainder, isParentConstrained) {
     var continueParsing = callback(childElement, childClass, isConstrained);
 
     while(/^\S/.test(trailer)) {
-        var modifierMatch = /^(?:\.-[a-z0-9-]+|::?[a-z-]+|\[[^\]]+\])(.*)$/.exec(trailer);
+        var modifierMatch = /^(?:\.-[a-z0-9-]+|::?[a-z-]+(?:\([^)]*\))?|\[[^\]]+\])(.*)$/.exec(trailer);
 
         if (!modifierMatch) {
             throw new Error('invalid modifier: "' + trailer + '"');
