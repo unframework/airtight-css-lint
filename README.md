@@ -2,38 +2,45 @@
 
 # Airtight CSS
 
-Basic set of CSS encapsulation rules that reduce side-effects/interactions between displayed elements. It's [BEM](http://csswizardry.com/2013/01/mindbemding-getting-your-head-round-bem-syntax/), but with one simple rule to fence-in components.
+Airtight CSS is all about CSS encapsulation to reduce side-effects/interactions between displayed elements.
 
-That means:
+It's just like [BEM](http://csswizardry.com/2013/01/mindbemding-getting-your-head-round-bem-syntax/), but with one simple rule to fence-in components:
+
+- **each DOM element should get its style from only one place**
+
+For every element in DOM markup, there should be *one* clearly obvious stylesheet source that influences it. The developer should also be able to trust that *no other stylesheet* ends up overriding that DOM element's appearance. Another term for this is *sole-sourced CSS*.
+
+Simple, right? It pays off surprisingly well!
+
+Due to how CSS positioning model works, that also means being careful with how absolute positioning is declared (see further below).
+
+This linter helps enforce that guideline in the app stylesheets. That means:
 
 * CSS is grouped into composable components
 * changes/refactors have less chance of breaking neighbouring code
 * code reviews (you're doing them, right?) are less of a mind-numbing 💩 experience
 * puppies frolick and kittens play
 
-## Sole-Sourced CSS
+## Writing Encapsulated CSS
 
-Encapsulating CSS means following one cardinal rule:
+Just like with BEM, we always work with a concept of a component class ("block" in BEM): e.g. `search-box` or `inline-form`. Any visual component is assumed to be a self-contained independent block of screen space.
 
-- **each DOM element should get its style from only one place**
-
-Simple, right? It pays off surprisingly well!
-
-For every element in DOM markup, there should be *one* clearly obvious stylesheet source that influences it. The developer should also be able to trust that *no other stylesheet* ends up overriding that DOM element's appearance.
-
-Due to how CSS positioning model works, that also means being careful with how absolute positioning is declared (see further below).
-
-## Writing Componentized CSS
-
-Just like with BEM, we always work with a concept of a component class ("block" in BEM): e.g. `search-box` or `inline-form`. It is the self-contained independent visual block of screen space. It might contain other blocks, but it may not influence their own styling, including sizing and position properties. Interplay between blocks is limited to standard DOM layout flow.
+Some components may be attached to others as DOM children, but they still don't influence each other's styling, including sizing and position properties. Interplay between these visual blocks is limited to standard DOM layout flow.
 
 Component markup might need to use child classes ("element" in BEM). They are always used under the umbrella of the top-level component class. To distinguish them, we either prefix them with a simple `_` (e.g. `_help-tip`), or the full top-level component name plus `__`: `search-box__help-tip`. Semantic element tags (e.g. `header`) may be used instead of a child class; anything except `div` and `span` falls under that rule.
 
 Any element might also be augmented with a modifier class (like in BEM). They are always prefixed with `-`: e.g. `-full-width`. They are always attached to either the top-level or child class.
 
-CSS rules always start with the top-level component class selector. That is followed by zero or more child class selectors or semantic tag selectors. The rule may not contain another component's class name (to avoid crossing component boundaries).
+This spells out a very clear structure for any CSS rule selector:
 
-Simple examples:
+* always start with the top-level component class selector
+* then write zero or more child class selectors or semantic tag selectors
+
+Oh, and the rule may not contain another component's class name (to avoid crossing component boundaries).
+
+## Examples
+
+Simple search box example, with a help tip element and button inside (looks even nicer with LESS or SCSS nesting):
 
 ```css
 .search-box {
@@ -65,9 +72,7 @@ Simple examples:
 }
 ```
 
-By the way, that looks even nicer with LESS or SCSS nesting.
-
-Examples of disallowed syntax that might cause encapsulation or readability problems:
+Examples of disallowed syntax that might cause encapsulation or ambiguity problems:
 
 ```css
 /* NOPE: sidebar component stepping on the search box toes */
@@ -81,23 +86,29 @@ Examples of disallowed syntax that might cause encapsulation or readability prob
     height: 10px;
 }
 
-/* NOPE: should not mix semantic element tag with child class name */
+/* NOPE: should not mix semantic element tag ("li") with child class name ("._title") */
 .popup li._title {
     background: #f00;
 }
 
-/* NOPE: non-semantic helper elements are OK, but should have a descriptive child class name */
+/* NOPE: non-semantic helper elements are OK, but should have a descriptive child class name like "._content-wrapper" */
 .popup > div {
     padding: 5px;
 }
 
-/* NOPE: top-level class name is enough of a distinguishing factor */
+/* NOPE: using top-level class name alone (".popup") is distinct enough */
 article.popup {
     position: fixed;
 }
 ```
 
-There are also restrictions on how absolutely-positioned elements may be declared. Elements with `position: absolute` property are placed relative to their "offset parent" - either document body or a parent node with a non-static `position`. That means possibly disastrous results if, for example, a parent element mistakenly loses the `position` property: the positioned child is shifted to an unpredictable spot in the page! For that reason, we ensure that the "offset parent" of a node is always defined in the same CSS component.
+## Absolute Positioning Rules
+
+There are also special restrictions on how absolutely-positioned elements may be declared.
+
+Browsers place elements with `position: absolute` property based on their "offset parent" - either document body or a parent node with a non-static `position`. That means possibly disastrous results if, for example, a parent element mistakenly loses its `position` property: the positioned child is shifted to an unpredictable spot in the page!
+
+For that reason, we ensure that the "offset parent" of a node is always defined in the same CSS component. That prevents unrelated CSS code from stepping on our toes.
 
 ```css
 /* NOPE: offset parent is out of control, which means unpredictable placement */
