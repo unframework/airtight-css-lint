@@ -1,6 +1,6 @@
 {
   "name": "airtight-css-lint",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Check CSS for encapsulation and unwanted side-effects",
   "main": "index.js",
   "scripts": {
