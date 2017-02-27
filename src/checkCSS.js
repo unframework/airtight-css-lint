@@ -38,13 +38,15 @@ function walkChildSelectors(callback, remainder, isParentConstrained) {
     var continueParsing = callback(childElement, childClass, isConstrained);
 
     while(/^\S/.test(trailer)) {
-        var modifierMatch = /^(?:\.-[a-z0-9-]+|::?[a-z-]+(?:\([^)]*\))?|\[[^\]]+\])(.*)$/.exec(trailer);
+        var modifierRegex = /^(?:\.-[a-z0-9-]+|::?[a-z-]+(?:\([^)]*\))?|\[[^\]]+\])(.*)$/,
+            directSemanticTagRegex = /^(?:\>(?!div)(?!span)[a-z0-9]+)(.*)$/;
+        var trailerMatch = modifierRegex.exec(trailer) || directSemanticTagRegex.exec(trailer);
 
-        if (!modifierMatch) {
-            throw new Error('invalid modifier: "' + trailer + '"');
+        if (!trailerMatch) {
+            throw new Error('invalid modifier or non-semantic tag: "' + trailer + '"');
         }
 
-        trailer = modifierMatch[1];
+        trailer = trailerMatch[1];
     }
 
     if (continueParsing && trailer !== '') {
